@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elementary English Quiz Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #2ec4b6;
+            --bg: #f8f9fa;
+            --text: #2b2d42;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 850px;
+            width: 100%;
+            background: white;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 30px;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--primary);
+            padding: 30px;
+            border-radius: 12px;
+            background: #f0f3ff;
+            cursor: pointer;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .upload-zone:hover { background: #e0e7ff; }
+
+        .quiz-area { display: none; }
+
+        .question-card {
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .opt {
+            border: 1px solid #d1d5db;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .opt:hover { border-color: var(--primary); background: #f8faff; }
+        .opt.selected { background: #4361ee; color: white; border-color: #4361ee; }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .correct { background: #dcfce7; color: #166534; }
+        .wrong { background: #fee2e2; color: #991b1b; }
+
+        .btn-submit {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 18px;
+            width: 100%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .score-banner {
+            display: none;
+            background: #2b2d42;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) { .options-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>English Practice with Be Heard</h1>
+        <p>Tải file bài học để tạo đề thi ngẫu nhiên</p>
+        <div class="upload-zone" onclick="document.getElementById('fileIn').click()">
+            <strong>Nhấn để tải file .docx</strong>
+            <input type="file" id="fileIn" hidden accept=".docx">
+            <p id="fileName" style="color: var(--primary); margin-top: 5px;"></p>
+        </div>
+    </div>
+
+    <div id="scoreBanner" class="score-banner"></div>
+
+    <div id="quizArea" class="quiz-area">
+        <h2 style="color: var(--primary)">Vocabulary Section</h2>
+        <div id="vQuestions"></div>
+
+        <h2 style="color: var(--primary)">Grammar Section</h2>
+        <div id="gQuestions"></div>
+
+        <button class="btn-submit" onclick="grade()">Nộp bài (Submit)</button>
+    </div>
+</div>
+
+<script>
+    // --- MASSIVE ELEMENTARY GRAMMAR BANK ---
+    const grammarPool = {
+        "present simple": [
+            { q: "She ___ (drink) milk every morning.", a: "drinks", options: ["drink", "drinks", "drinking", "is drink"], exp: "He/She/It + V-s/es.", vi: "Cô ấy uống sữa mỗi sáng." },
+            { q: "They ___ (not/like) carrots.", a: "don't like", options: ["don't like", "doesn't like", "not like", "no like"], exp: "Negative plural: don't + V.", vi: "Họ không thích cà rốt." },
+            { q: "___ you live in a big city?", a: "Do", options: ["Do", "Does", "Are", "Is"], exp: "Question for 'You' uses 'Do'.", vi: "Bạn có sống ở thành phố lớn không?" },
+            { q: "The sun ___ (rise) in the East.", a: "rises", options: ["rise", "rises", "rising", "rose"], exp: "Sự thật hiển nhiên chia hiện tại đơn.", vi: "Mặt trời mọc ở hướng Đông." },
+            { q: "My father ___ (work) in a bank.", a: "works", options: ["work", "works", "working", "worker"], exp: "Ngôi thứ 3 số ít thêm 's'.", vi: "Bố tôi làm việc trong ngân hàng." }
+        ],
+        "past simple": [
+            { q: "We ___ (go) to the zoo last Sunday.", a: "went", options: ["go", "goes", "went", "gone"], exp: "Past of 'go' is 'went'.", vi: "Chúng tôi đã đi sở thú vào Chủ Nhật tuần trước." },
+            { q: "I ___ (not/see) you at school yesterday.", a: "didn't see", options: ["didn't see", "don't see", "wasn't see", "not saw"], exp: "Negative past: didn't + V-base.", vi: "Tôi đã không thấy bạn ở trường hôm qua." },
+            { q: "Did she ___ (finish) her homework?", a: "finish", options: ["finish", "finished", "finishing", "finishes"], exp: "Sau 'Did' dùng động từ nguyên thể.", vi: "Cô ấy đã hoàn thành bài tập về nhà chưa?" },
+            { q: "It ___ (rain) a lot two days ago.", a: "rained", options: ["rain", "rains", "rained", "raining"], exp: "Quá khứ của rain là rained.", vi: "Trời đã mưa nhiều vào 2 ngày trước." },
+            { q: "They ___ (be) very happy last night.", a: "were", options: ["was", "were", "are", "be"], exp: "To be quá khứ số nhiều là 'were'.", vi: "Họ đã rất hạnh phúc tối qua." }
+        ],
+        "future simple": [
+            { q: "I promise I ___ (help) you.", a: "will help", options: ["will help", "help", "helping", "am help"], exp: "Hứa hẹn dùng 'will'.", vi: "Tôi hứa tôi sẽ giúp bạn." },
+            { q: "It ___ (not/snow) tomorrow.", a: "won't snow", options: ["won't snow", "will snow not", "don't snow", "isn't snow"], exp: "Phủ định của will là won't.", vi: "Ngày mai trời sẽ không có tuyết đâu." },
+            { q: "___ you be at home tonight?", a: "Will", options: ["Do", "Are", "Will", "Shall"], exp: "Câu hỏi tương lai với Will.", vi: "Tối nay bạn có ở nhà không?" }
+        ],
+        "present continuous": [
+            { q: "Listen! The birds ___ (sing).", a: "are singing", options: ["sing", "is singing", "are singing", "singing"], exp: "Hành động đang xảy ra.", vi: "Nghe kìa! Những chú chim đang hót." },
+            { q: "I ___ (not/play) video games now.", a: "am not playing", options: ["am not playing", "don't play", "isn't playing", "not playing"], exp: "Phủ định hiện tại tiếp diễn cho 'I'.", vi: "Tôi đang không chơi game lúc này." },
+            { q: "What ___ they doing?", a: "are", options: ["do", "are", "is", "am"], exp: "Wh- + be + S + V-ing?", vi: "Họ đang làm gì vậy?" }
+        ],
+        "present perfect": [
+            { q: "I ___ (see) that movie three times.", a: "have seen", options: ["see", "saw", "have seen", "has seen"], exp: "Trải nghiệm dùng hiện tại hoàn thành.", vi: "Tôi đã xem phim đó 3 lần rồi." },
+            { q: "She ___ (not/eat) lunch yet.", a: "hasn't eaten", options: ["haven't eaten", "hasn't eaten", "didn't eat", "not eat"], exp: "Has/Have + not + V3.", vi: "Cô ấy vẫn chưa ăn trưa." },
+            { q: "___ you ever been to London?", a: "Have", options: ["Do", "Did", "Have", "Has"], exp: "Câu hỏi trải nghiệm với 'You'.", vi: "Bạn đã bao giờ đến London chưa?" }
+        ],
+        "be going to": [
+            { q: "We ___ (watch) a football match tonight.", a: "are going to watch", options: ["will watch", "are going to watch", "watching", "is going to watch"], exp: "Kế hoạch đã định trước.", vi: "Tối nay chúng tôi định xem một trận bóng đá." },
+            { q: "Is she ___ (buy) that dress?", a: "going to buy", options: ["going to buy", "will buy", "go buy", "buying"], exp: "Be + going to + V.", vi: "Cô ấy có định mua chiếc váy đó không?" }
+        ],
+        "there is - there are": [
+            { q: "___ a big tree in front of my house.", a: "There is", options: ["There is", "There are", "Is there", "Are there"], exp: "Số ít dùng There is.", vi: "Có một cái cây lớn trước nhà tôi." },
+            { q: "___ any oranges in the basket?", a: "Are there", options: ["Is there", "Are there", "There is", "There are"], exp: "Câu hỏi số nhiều.", vi: "Có quả cam nào trong giỏ không?" }
+        ],
+        "would like": [
+            { q: "I ___ (like) a cup of tea, please.", a: "would like", options: ["like", "would like", "wanting", "will like"], exp: "Lời đề nghị lịch sự.", vi: "Cho tôi xin một tách trà." },
+            { q: "___ you like to play chess with me?", a: "Would", options: ["Do", "Would", "Will", "Can"], exp: "Lời mời: Would you like...?", vi: "Bạn có muốn chơi cờ với tôi không?" }
+        ],
+        "modal verbs": [
+            { q: "You ___ (not/must) eat in the library.", a: "mustn't", options: ["can't", "mustn't", "don't", "won't"], exp: "Cấm đoán dùng mustn't.", vi: "Bạn không được phép ăn trong thư viện." },
+            { q: "___ I use your pen, please?", a: "Can", options: ["Must", "Will", "Can", "Do"], exp: "Hỏi xin phép.", vi: "Tôi có thể dùng bút của bạn được không?" }
+        ],
+        "possession 's": [
+            { q: "This is my ___ (brother) car.", a: "brother's", options: ["brother", "brothers", "brother's", "brother is"], exp: "Sở hữu cách thêm 's.", vi: "Đây là xe hơi của anh trai tôi." },
+            { q: "Where are the ___ (children) toys?", a: "children's", options: ["childrens", "child's", "children's", "childrens'"], exp: "Số nhiều bất quy tắc vẫn thêm 's.", vi: "Đồ chơi của bọn trẻ đâu rồi?" }
+        ],
+        "adverb and adjective": [
+            { q: "She is a ___ singer. (good)", a: "good", options: ["good", "well", "goodly", "better"], exp: "Tính từ bổ nghĩa cho danh từ.", vi: "Cô ấy là một ca sĩ giỏi." },
+            { q: "He runs very ___ (fast).", a: "fast", options: ["fast", "fastly", "slow", "good"], exp: "Trạng từ của fast vẫn là fast.", vi: "Anh ấy chạy rất nhanh." },
+            { q: "The students are studying ___ (quiet).", a: "quietly", options: ["quiet", "quietly", "quietness", "quieter"], exp: "Trạng từ bổ nghĩa cho động từ.", vi: "Các học sinh đang học bài một cách yên lặng." }
+        ]
+    };
+
+    let vocabData = [];
+    let activeTopics = [];
+
+    // --- UTILITIES ---
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // --- LOGIC ---
+    document.getElementById('fileIn').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+        document.getElementById('fileName').innerText = "Processing: " + file.name;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            mammoth.extractRawText({ arrayBuffer: event.target.result }).then(res => {
+                parse(res.value);
+                build();
+            });
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function parse(text) {
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        vocabData = [];
+        activeTopics = [];
+
+        lines.forEach(line => {
+            if(line.includes('-') || line.includes(':')) {
+                const parts = line.split(/[-:]/);
+                if(parts.length >= 2) vocabData.push({ w: parts[0].trim(), m: parts[1].trim() });
+            }
+            const low = line.toLowerCase();
+            Object.keys(grammarPool).forEach(topic => {
+                if(low.includes(topic)) activeTopics.push(topic);
+            });
+        });
+
+        activeTopics = [...new Set(activeTopics)];
+        if(activeTopics.length === 0) activeTopics = Object.keys(grammarPool);
+    }
+
+    function build() {
+        const vContainer = document.getElementById('vQuestions');
+        const gContainer = document.getElementById('gQuestions');
+        vContainer.innerHTML = ''; gContainer.innerHTML = '';
+        document.getElementById('scoreBanner').style.display = 'none';
+
+        // 1. Vocab (10 random)
+        const vList = shuffle([...vocabData]);
+        for(let i=0; i<10; i++) {
+            const item = vList[i % vList.length];
+            const isEng = Math.random() > 0.5;
+            const q = isEng ? `Meaning of "<strong>${item.w}</strong>"?` : `English for "<strong>${item.m}</strong>"?`;
+            const correct = isEng ? item.m : item.w;
+            let pool = vocabData.map(x => isEng ? x.m : x.w);
+            let opts = shuffle([correct, ...shuffle(pool.filter(p => p !== correct)).slice(0, 3)]);
+            vContainer.innerHTML += createCard(i, q, opts, correct, `Correct: ${item.w} = ${item.m}`, `${item.w}: ${item.m}`);
+        }
+
+        // 2. Grammar (Exactly 10 random from selected topics)
+        let masterG = [];
+        activeTopics.forEach(t => masterG = [...masterG, ...grammarPool[t]]);
+        
+        // Shuffle master list to ensure new questions every time
+        let selectedG = shuffle([...masterG]).slice(0, 10);
+        
+        // If still not enough, take from the whole pool
+        if(selectedG.length < 10) {
+            let fillers = shuffle(Object.values(grammarPool).flat()).slice(0, 10 - selectedG.length);
+            selectedG = [...selectedG, ...fillers];
+        }
+
+        selectedG.forEach((item, i) => {
+            gContainer.innerHTML += createCard(i + 10, item.q, shuffle([...item.options]), item.a, item.exp, item.vi);
+        });
+
+        document.getElementById('quizArea').style.display = 'block';
+        window.scrollTo({ top: 400, behavior: 'smooth' });
+    }
+
+    function createCard(id, q, opts, ans, exp, vi) {
+        return `
+            <div class="question-card" data-ans="${ans}">
+                <p><strong>Question ${id+1}:</strong> ${q.replace('___', '______')}</p>
+                <div class="options-grid">
+                    ${opts.map(o => `<div class="opt" onclick="select(this)">${o}</div>`).join('')}
+                </div>
+                <div class="feedback">
+                    <strong>Giải thích:</strong> ${exp}<br>
+                    <div style="font-style:italic">Dịch: ${vi}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    window.select = function(el) {
+        el.parentElement.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+
+    window.grade = function() {
+        const cards = document.querySelectorAll('.question-card');
+        let score = 0;
+        cards.forEach(card => {
+            const sel = card.querySelector('.opt.selected');
+            const ans = card.getAttribute('data-ans');
+            const fb = card.querySelector('.feedback');
+            fb.style.display = 'block';
+            if(sel && sel.innerText === ans) {
+                score++; fb.classList.add('correct');
+            } else {
+                fb.classList.add('wrong');
+                fb.innerHTML = `<span>❌ Sai. Đáp án đúng: <strong>${ans}</strong></span><br>` + fb.innerHTML;
+            }
+        });
+        const banner = document.getElementById('scoreBanner');
+        banner.style.display = 'block';
+        banner.innerHTML = `Kết quả: ${Math.round((score/cards.length)*100)}% (${score}/${cards.length})`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>
