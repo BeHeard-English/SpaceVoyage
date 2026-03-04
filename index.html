@@ -947,6 +947,7 @@ function handleControls(dt){
 }
 
 function setupInput(){
+  // --- BÀN PHÍM ---
   document.addEventListener('keydown',e=>{
     if(e.key==='ArrowLeft'||e.key==='a')keys.left=true;
     if(e.key==='ArrowRight'||e.key==='d')keys.right=true;
@@ -958,9 +959,36 @@ function setupInput(){
     if(e.key==='ArrowRight'||e.key==='d')keys.right=false;
     if(e.key===' '||e.key==='ArrowUp'||e.key==='w')keys.shoot=false;
   });
-  canvas.addEventListener('touchstart',e=>{e.preventDefault();AE.resume();touchX=e.touches[0].clientX;},{passive:false});
+
+  // --- MÁY TÍNH (MOUSE) ---
+  // Thêm sự kiện nháy đúp chuột trên vùng chơi để bắn
+  canvas.addEventListener('dblclick', e => {
+    e.preventDefault();
+    AE.resume();
+    fireLaser();
+  });
+
+  // --- ĐIỆN THOẠI (TOUCH) ---
+  let lastTapTime = 0; // Biến lưu thời gian chạm lần cuối
+  
+  canvas.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    AE.resume();
+    touchX=e.touches[0].clientX;
+    
+    // Logic Double Tap để bắn
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapTime;
+    if (tapLength < 300 && tapLength > 0) { // Nếu chạm 2 lần trong vòng 300ms
+        fireLaser();
+    }
+    lastTapTime = currentTime;
+  },{passive:false});
+  
   canvas.addEventListener('touchmove',e=>{e.preventDefault();touchX=e.touches[0].clientX;},{passive:false});
   canvas.addEventListener('touchend',e=>{e.preventDefault();touchX=null;},{passive:false});
+  
+  // --- NÚT ĐIỀU KHIỂN ẢO TRÊN MÀN HÌNH ---
   const bl=I('btnL'),br=I('btnR'),bs=I('btnShoot');
   bl.addEventListener('touchstart',e=>{e.preventDefault();mLeft=true;AE.resume();},{passive:false});
   bl.addEventListener('touchend',e=>{e.preventDefault();mLeft=false;},{passive:false});
