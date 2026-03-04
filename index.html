@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Space Grammar Voyage 🚀</title>
+<title>Be Heard - Space Voyage 🚀</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap');
@@ -185,13 +185,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <div class="sw">
   <div class="logo">
     <span class="logo-rocket">🚀</span>
-    <div class="logo-title">SPACE GRAMMAR<br>VOYAGE</div>
+    <div class="logo-title">SPACE VOYAGE</div>
     <div class="logo-sub">Interactive Quiz Shooter</div>
   </div>
   <div class="card">
-    <div class="clbl">Dữ liệu câu hỏi</div>
+    <div class="clbl">Content</div>
     <div class="tab-bar">
-      <button class="tb active" onclick="switchTab('text')">✏️ Nhập văn bản</button>
+      <button class="tb active" onclick="switchTab('text')">✏️ Paste below</button>
       <button class="tb" onclick="switchTab('docx')">📄 Upload DOCX</button>
     </div>
     <div id="tabText" class="tp active">
@@ -212,7 +212,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
     </div>
   </div>
   <div class="card">
-    <div class="clbl">Âm thanh & Cài đặt</div>
+    <div class="clbl">Music and Sound effect</div>
     <div class="sg">
       <div>
         <label class="ull" for="bgmFile">
@@ -230,7 +230,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
       </div>
     </div>
   </div>
-  <button id="startBtn" onclick="onStart()">⚡ BẮT ĐẦU HÀNH TRÌNH ⚡</button>
+  <button id="startBtn" onclick="onStart()">⚡ LET'S START ⚡</button>
 </div>
 </div>
 
@@ -735,7 +735,7 @@ function createAnswers(options){
     const pal=isC?PALS.correct:PALS.wrong[i%PALS.wrong.length];
     const st=shuf[i%shuf.length];
     const x=cw*i+cw/2+(Math.random()-.5)*cw*.24;
-    const rx=Math.min(cw*.76,195),ry=64;
+    const rx = Math.min(cw * .85, 280), ry = 90;
 
     // Pre-generate asteroid shape
     const n=11,pts=[];
@@ -786,7 +786,7 @@ function drawAnswers(){
   });
 }
 function drawAnsText(a){
-  const fs=Math.min(13.5,a.w*.115);
+  const fs = Math.min(18, a.w * 0.14);
   ctx.font=`700 ${fs}px 'Exo 2',sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.shadowBlur=10;ctx.shadowColor=a.pal.base;ctx.fillStyle='#fff';
   const mw=a.w*.8,words=a.text.split(' ');let lines=[],cur='';
@@ -947,7 +947,6 @@ function handleControls(dt){
 }
 
 function setupInput(){
-  // --- BÀN PHÍM ---
   document.addEventListener('keydown',e=>{
     if(e.key==='ArrowLeft'||e.key==='a')keys.left=true;
     if(e.key==='ArrowRight'||e.key==='d')keys.right=true;
@@ -959,36 +958,9 @@ function setupInput(){
     if(e.key==='ArrowRight'||e.key==='d')keys.right=false;
     if(e.key===' '||e.key==='ArrowUp'||e.key==='w')keys.shoot=false;
   });
-
-  // --- MÁY TÍNH (MOUSE) ---
-  // Thêm sự kiện nháy đúp chuột trên vùng chơi để bắn
-  canvas.addEventListener('dblclick', e => {
-    e.preventDefault();
-    AE.resume();
-    fireLaser();
-  });
-
-  // --- ĐIỆN THOẠI (TOUCH) ---
-  let lastTapTime = 0; // Biến lưu thời gian chạm lần cuối
-  
-  canvas.addEventListener('touchstart',e=>{
-    e.preventDefault();
-    AE.resume();
-    touchX=e.touches[0].clientX;
-    
-    // Logic Double Tap để bắn
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTapTime;
-    if (tapLength < 300 && tapLength > 0) { // Nếu chạm 2 lần trong vòng 300ms
-        fireLaser();
-    }
-    lastTapTime = currentTime;
-  },{passive:false});
-  
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();AE.resume();touchX=e.touches[0].clientX;},{passive:false});
   canvas.addEventListener('touchmove',e=>{e.preventDefault();touchX=e.touches[0].clientX;},{passive:false});
   canvas.addEventListener('touchend',e=>{e.preventDefault();touchX=null;},{passive:false});
-  
-  // --- NÚT ĐIỀU KHIỂN ẢO TRÊN MÀN HÌNH ---
   const bl=I('btnL'),br=I('btnR'),bs=I('btnShoot');
   bl.addEventListener('touchstart',e=>{e.preventDefault();mLeft=true;AE.resume();},{passive:false});
   bl.addEventListener('touchend',e=>{e.preventDefault();mLeft=false;},{passive:false});
