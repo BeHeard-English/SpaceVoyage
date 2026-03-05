@@ -932,18 +932,58 @@ function doShuffle(){quizData.sort(()=>Math.random()-.5);GC.qIdx=0;loadQ();}
 const keys={left:false,right:false,shoot:false};
 let touchX=null,mLeft=false,mRight=false,shootPressed=false;
 
-function handleControls(dt){
-  let dir=0;
-  if(keys.left||mLeft)dir=-1;
-  else if(keys.right||mRight)dir=1;
-  else if(touchX!==null)dir=Math.sign(touchX-ship.x)*Math.min(1,Math.abs(touchX-ship.x)/52);
-  if(dir!==0)ship.vx=dir*ship.speed;else ship.vx*=.8;
-  ship.x+=ship.vx*dt;
-  ship.x=Math.max(ship.W*.52,Math.min(canvas.width-ship.W*.52,ship.x));
-  ship.bank=Math.max(-1,Math.min(1,ship.vx/ship.speed));
-  if(Math.abs(ship.vx)>16&&Math.random()<.36)
-    particles.push({x:ship.x+(Math.random()-.5)*28,y:ship.y+ship.H*.43,vx:ship.vx*.07,vy:26+Math.random()*65,life:1,decay:2.3,sz:1.4+Math.random()*1.8,col:Math.random()>.5?'#0088ff':'#9944ff',type:'dot'});
-  if(keys.shoot||shootPressed){fireLaser();shootPressed=false;}
+function handleControls(dt) {
+  let dir = 0;
+  
+  // 1. Xử lý điều khiển bằng bàn phím hoặc nút ảo (Giữ nguyên vận tốc để mượt)
+  if (keys.left || mLeft) dir = -1;
+  else if (keys.right || mRight) dir = 1;
+
+  if (touchX !== null) {
+    // 2. XỬ LÝ TRÊN ĐIỆN THOẠI/MÁY TÍNH BẢNG (Phản hồi tức thì)
+    // Thay vì tính vận tốc, ta gán trực tiếp tọa độ tàu bằng tọa độ ngón tay
+    const targetX = touchX;
+    
+    // Tính toán ship.vx một chút để giữ hiệu ứng nghiêng (bank) của tàu
+    ship.vx = (targetX - ship.x) / dt; 
+    ship.x = targetX; 
+  } else {
+    // 3. Xử lý khi dùng bàn phím hoặc khi không chạm màn hình
+    if (dir !== 0) {
+      ship.vx = dir * ship.speed;
+    } else {
+      ship.vx *= 0.8; // Giảm tốc dần khi thả phím
+    }
+    ship.x += ship.vx * dt;
+  }
+
+  // Giữ phi thuyền trong phạm vi màn hình
+  const margin = ship.W * 0.52;
+  ship.x = Math.max(margin, Math.min(canvas.width - margin, ship.x));
+
+  // Cập nhật độ nghiêng của tàu dựa trên vận tốc
+  ship.bank = Math.max(-1, Math.min(1, ship.vx / ship.speed));
+
+  // Hiệu ứng hạt (khói/lửa) khi di chuyển
+  if (Math.abs(ship.vx) > 16 && Math.random() < 0.36) {
+    particles.push({
+      x: ship.x + (Math.random() - 0.5) * 28,
+      y: ship.y + ship.H * 0.43,
+      vx: ship.vx * 0.07,
+      vy: 26 + Math.random() * 65,
+      life: 1,
+      decay: 2.3,
+      sz: 1.4 + Math.random() * 1.8,
+      col: Math.random() > 0.5 ? '#0088ff' : '#9944ff',
+      type: 'dot'
+    });
+  }
+
+  // Xử lý bắn laser
+  if (keys.shoot || shootPressed) {
+    fireLaser();
+    shootPressed = false;
+  }
 }
 
 function setupInput(){
